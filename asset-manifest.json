@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/bank-cash-book-app/static/css/main.ec280539.css",
+    "main.js": "/bank-cash-book-app/static/js/main.7e8632a7.js",
+    "index.html": "/bank-cash-book-app/index.html",
+    "main.ec280539.css.map": "/bank-cash-book-app/static/css/main.ec280539.css.map",
+    "main.7e8632a7.js.map": "/bank-cash-book-app/static/js/main.7e8632a7.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.ec280539.css",
+    "static/js/main.7e8632a7.js"
+  ]
+}
