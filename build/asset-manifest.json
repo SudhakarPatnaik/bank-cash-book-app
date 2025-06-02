@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/monthly-statement/static/css/main.ec280539.css",
+    "main.js": "/monthly-statement/static/js/main.7e8632a7.js",
+    "index.html": "/monthly-statement/index.html",
+    "main.ec280539.css.map": "/monthly-statement/static/css/main.ec280539.css.map",
+    "main.7e8632a7.js.map": "/monthly-statement/static/js/main.7e8632a7.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.ec280539.css",
+    "static/js/main.7e8632a7.js"
+  ]
+}

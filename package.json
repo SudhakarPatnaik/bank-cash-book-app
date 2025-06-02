@@ -3,11 +3,14 @@
     "version": "1.0.0",
     "private": true,
     "description": "React app to upload an Excel file and display Bank Book and Cash Book with export functionality.",
+    "homepage": "https://SudhakarPatnaik.github.io/monthly-statement/",
     "scripts": {
         "start": "react-scripts start",
         "build": "react-scripts build",
         "test": "react-scripts test",
-        "eject": "react-scripts eject"
+        "eject": "react-scripts eject",
+        "predeploy": "npm run build",
+        "deploy": "gh-pages -d build"
     },
     "dependencies": {
         "react": "^18.2.0",
@@ -27,5 +30,7 @@
             "last 1 safari version"
         ]
     },
-    "devDependencies": {}
+    "devDependencies": {
+        "gh-pages": "^6.3.0"
+    }
 }
