@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
+import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
 
 export default function ExcelViewer() {
     const [bankStats, setBankStats] = useState(null);
@@ -13,6 +15,108 @@ export default function ExcelViewer() {
     const [activeNav, setActiveNav] = useState("profitloss"); // NEW: for left nav
     const [showNav, setShowNav] = useState(false); // For mobile nav drawer
     const [darkMode, setDarkMode] = useState(false);
+    const [forceMobile, setForceMobile] = useState(false); // NEW: force mobile view
+    const [forceDesktop, setForceDesktop] = useState(false); // NEW: force desktop view
+
+    // Helper to determine if mobile view should be used
+    const isMobile = forceMobile || (!forceDesktop && window.innerWidth <= 700);
+
+    useEffect(() => {
+        const link = document.createElement('link');
+        link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap';
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+
+        // Add global styles
+        const style = document.createElement('style');
+        style.textContent = `
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            @keyframes fadeSlideUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            @keyframes pulseGlow {
+                0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+                70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+            }
+
+            @keyframes shimmer {
+                0% { background-position: -1000px 0; }
+                100% { background-position: 1000px 0; }
+            }
+
+            .card {
+                transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                            box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .card:hover {
+                transform: translateY(-2px);
+            }
+
+            .nav-btn {
+                position: relative;
+                overflow: hidden;
+            }
+
+            .nav-btn::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 100%;
+                height: 100%;
+                background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+                transform: translate(-50%, -50%) scale(0);
+                transition: transform 0.5s;
+            }
+
+            .nav-btn:hover::after {
+                transform: translate(-50%, -50%) scale(2);
+            }
+
+            table {
+                --border-radius: 12px;
+                border-radius: var(--border-radius);
+                overflow: hidden;
+            }
+
+            table th:first-child {
+                border-top-left-radius: var(--border-radius);
+            }
+
+            table th:last-child {
+                border-top-right-radius: var(--border-radius);
+            }
+
+            tbody tr:last-child td:first-child {
+                border-bottom-left-radius: var(--border-radius);
+            }
+
+            tbody tr:last-child td:last-child {
+                border-bottom-right-radius: var(--border-radius);
+            }
+        `;
+        document.head.appendChild(style);
+
+        return () => {
+            document.head.removeChild(link);
+            document.head.removeChild(style);
+        };
+    }, []);
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
@@ -194,450 +298,772 @@ export default function ExcelViewer() {
         return excelDate;
     }
 
+    const containerStyle = {
+        minHeight: '100vh',
+        background: darkMode ? '#1f2937' : '#f9fafb',
+        color: darkMode ? '#f9fafb' : '#111827',
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    };
+
+    const navStyle = {
+        position: isMobile ? 'fixed' : 'sticky',
+        top: 0,
+        left: 0,
+        height: isMobile ? '100vh' : '100vh',
+        width: isMobile ? (showNav ? '240px' : '0') : '240px',
+        background: darkMode ? '#111827' : '#ffffff',
+        borderRight: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex: 50,
+        overflowY: 'auto',
+        transform: isMobile && !showNav ? 'translateX(-100%)' : 'translateX(0)',
+        boxShadow: isMobile && showNav ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' : 'none',
+    }; const contentStyle = {
+        flex: 1,
+        padding: '1.5rem',
+        marginLeft: isMobile ? 0 : '240px',
+        transition: 'margin-left 0.3s',
+        background: darkMode ? '#1f2937' : '#f9fafb',
+        minHeight: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+    };
+
+    const cardStyle = {
+        background: darkMode ? '#374151' : '#ffffff',
+        borderRadius: '12px',
+        padding: '20px',
+        marginBottom: '20px',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        animation: 'fadeSlideUp 0.5s ease forwards',
+        border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb',
+    };
+
+    const tableContainerStyle = {
+        width: '100%',
+        margin: '12px 0',
+        position: 'relative',
+        overflowX: 'auto',
+        borderRadius: '12px',
+        background: darkMode ? '#1f2937' : '#ffffff',
+        border: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb',
+        boxShadow: darkMode
+            ? '0 4px 6px -1px rgba(0, 0, 0, 0.2)'
+            : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    };
+
+    const tableStyle = {
+        width: '100%',
+        minWidth: isMobile ? '800px' : 'auto',
+        borderCollapse: 'separate',
+        borderSpacing: 0,
+        fontSize: '0.875rem',
+    };
+
+    const cellStyle = {
+        padding: '1rem 1.5rem',
+        borderBottom: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb',
+        whiteSpace: 'nowrap',
+        transition: 'background-color 0.2s',
+        lineHeight: '1.5',
+        letterSpacing: '0.01em',
+        verticalAlign: 'middle',
+    };
+
+    const headerCellStyle = {
+        padding: '1.25rem 1.5rem',
+        background: darkMode ? '#374151' : '#f8fafc',
+        fontWeight: 600,
+        textAlign: 'left',
+        fontSize: '0.75rem',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        color: darkMode ? '#f3f4f6' : '#1f2937',
+        borderBottom: darkMode ? '2px solid #4b5563' : '2px solid #e5e7eb',
+        position: 'sticky',
+        top: 0,
+    };
+
+    const buttonStyle = {
+        padding: '8px 16px',
+        borderRadius: '8px',
+        border: 'none',
+        background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+        color: '#ffffff',
+        fontWeight: 500,
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        fontFamily: "'Inter', sans-serif",
+        position: 'relative',
+        overflow: 'hidden',
+    };
+
+    const navButtonStyle = {
+        width: '100%',
+        padding: '12px 16px',
+        textAlign: 'left',
+        background: 'transparent',
+        border: 'none',
+        color: darkMode ? '#f9fafb' : '#111827',
+        cursor: 'pointer',
+        fontWeight: 500,
+        transition: 'all 0.2s',
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+    };
+
+    const tabStyle = {
+        padding: '8px 16px',
+        background: 'transparent',
+        border: 'none',
+        borderBottom: '2px solid transparent',
+        color: darkMode ? '#f9fafb' : '#111827',
+        cursor: 'pointer',
+        fontWeight: 500,
+        transition: 'all 0.2s',
+    };
+
+    const activeTabStyle = {
+        ...tabStyle,
+        borderBottom: '2px solid #6366f1',
+        color: '#6366f1',
+    };
+
+    const renderTable = (data, title) => {
+        if (!data || !data.length) return null;
+
+        return (<div className={isMobile ? "card" : ""} style={cardStyle}>
+            <h3 style={{
+                marginBottom: '16px',
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+            }}>{title}</h3>
+            <div style={tableContainerStyle}>
+                <table style={tableStyle}>
+                    <thead>
+                        <tr>
+                            {Object.keys(data[0]).map((key, index) => (
+                                <th key={index} style={headerCellStyle}>
+                                    {key}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {data.map((row, rowIndex) => (
+                            <tr key={rowIndex} style={{
+                                background: darkMode ? '#1f2937' : '#ffffff',
+                                transition: 'background-color 0.2s'
+                            }}>
+                                {Object.values(row).map((cell, cellIndex) => (
+                                    <td key={cellIndex} style={{
+                                        ...cellStyle,
+                                        background: typeof cell === 'number' && cell < 0 ?
+                                            (darkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)') :
+                                            'transparent',
+                                        color: typeof cell === 'number' && cell < 0 ?
+                                            '#ef4444' : 'inherit',
+                                    }}>
+                                        {typeof cell === 'number' ?
+                                            new Intl.NumberFormat('en-IN', {
+                                                style: 'currency',
+                                                currency: 'INR'
+                                            }).format(cell) :
+                                            cell}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        );
+    };
+
+    const renderNavButton = (label, nav, icon) => (
+        <Button
+            variant={activeNav === nav ? "primary" : "ghost"}
+            className={`nav-btn ${activeNav === nav ? "active" : ""}`}
+            style={{
+                width: '100%',
+                justifyContent: 'flex-start',
+                padding: '1.1rem 2rem',
+                marginBottom: 8,
+                borderRadius: '0 24px 24px 0',
+                fontWeight: 600,
+                fontSize: '1.08rem',
+            }}
+            onClick={() => { setActiveNav(nav); setShowNav(false); }}
+        >
+            {icon && <span role="img" aria-label={label.toLowerCase()}>{icon}</span>}
+            {label}
+        </Button>
+    );
+
+    const renderCard = (title, items, variant = 'default') => (
+        <Card darkMode={darkMode} variant={variant}>
+            <h2 style={{
+                fontSize: '1.08rem',
+                margin: '0 0 12px 0',
+                fontWeight: 800,
+                lineHeight: 1.1,
+                color: darkMode ? '#f9fafb' : '#3b3b5c',
+                letterSpacing: 0.2
+            }}>{title}</h2>
+            {items.map((item, index) => (
+                <p key={index} style={{
+                    margin: '8px 0',
+                    fontSize: '1.01rem',
+                    lineHeight: 1.13,
+                    color: darkMode ? '#f9fafb' : '#4a5568'
+                }}>
+                    {item.label}: <span style={{
+                        fontWeight: 700,
+                        color: item.type === 'income' ? '#2563eb' :
+                            item.type === 'expense' ? '#e11d48' :
+                                item.type === 'difference' ? (item.value >= 0 ? '#059669' : '#e11d48') :
+                                    (darkMode ? '#f9fafb' : '#111827')
+                    }}>
+                        {item.type === 'difference' && item.value >= 0 ? '+' : ''}
+                        ₹{item.value.toFixed(2)}
+                    </span>
+                </p>
+            ))}
+        </Card>
+    ); const FileUploader = ({ onChange }) => (
+        <Card darkMode={darkMode} variant="default" isMobile={isMobile} style={{ maxWidth: 500, margin: '0 auto' }}>
+            <label
+                htmlFor="file-upload"
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    padding: '2rem',
+                    borderRadius: '8px',
+                    border: `2px dashed ${darkMode ? '#4b5563' : '#e5e7eb'}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                }}
+            >
+                <span role="img" aria-label="upload" style={{ fontSize: '2rem', marginBottom: '1rem' }}>
+                    📋
+                </span>
+                <span style={{
+                    fontSize: '1.1rem',
+                    fontWeight: 500,
+                    marginBottom: '0.5rem',
+                    color: darkMode ? '#f9fafb' : '#111827'
+                }}>
+                    Upload Excel File
+                </span>
+                <span style={{
+                    fontSize: '0.875rem',
+                    color: darkMode ? '#9ca3af' : '#6b7280'
+                }}>
+                    Click to browse or drag and drop
+                </span>
+                <input
+                    id="file-upload"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={onChange}
+                    style={{
+                        position: 'absolute',
+                        width: '1px',
+                        height: '1px',
+                        padding: 0,
+                        margin: '-1px',
+                        overflow: 'hidden',
+                        clip: 'rect(0, 0, 0, 0)',
+                        border: 0
+                    }}
+                />
+            </label>
+        </Card>
+    );
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: darkMode ? '#181c25' : '#f4f6fa', transition: 'background 0.2s' }}>
-            {/* Mobile Header with Hamburger for Nav */}
-            <header style={{ backgroundColor: darkMode ? "#181c25" : "#1a202c", color: "#ffffff", padding: "1.2rem 0.8rem 1.1rem 0.8rem", textAlign: "center", position: 'relative', boxShadow: '0 1px 8px 0 rgba(44,62,80,0.13)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
+        <div style={containerStyle}>
+            {/* Header */}
+            <header style={{
+                backgroundColor: darkMode ? "#1f2937" : "#ffffff",
+                color: darkMode ? "#f9fafb" : "#111827",
+                padding: isMobile ? "1.2rem 0.8rem" : "1.5rem 2rem",
+                position: 'sticky',
+                top: 0,
+                zIndex: 40,
+                boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem'
+            }}>
                 <button
-                    aria-label="Open navigation"
                     onClick={() => setShowNav(!showNav)}
                     style={{
                         background: 'none',
                         border: 'none',
-                        color: '#fff',
-                        fontSize: '1.8rem',
-                        marginRight: 4,
-                        display: 'block',
+                        fontSize: '1.5rem',
                         cursor: 'pointer',
-                        padding: '0 4px',
+                        padding: '4px',
+                        color: darkMode ? '#f9fafb' : '#111827',
                     }}
                 >
-                    <span style={{ fontSize: '1.8rem', verticalAlign: 'middle' }}>☰</span>
+                    ☰
                 </button>
-                <h1
-                    style={{
-                        fontSize: '2.1rem',
-                        fontWeight: 900,
-                        margin: 0,
-                        flex: 1,
-                        textAlign: 'center',
-                        letterSpacing: 1.2,
-                        background: 'linear-gradient(90deg, #fbbf24 10%, #6366f1 60%, #06b6d4 100%)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                        textFillColor: 'transparent',
-                        textShadow: '0 2px 12px rgba(44,62,80,0.18)',
-                        lineHeight: 1.1,
-                        padding: '0 0.5rem',
-                        userSelect: 'none',
-                    }}
-                >
+                <h1 style={{
+                    fontSize: '1.5rem',
+                    fontWeight: 700,
+                    margin: 0,
+                    flex: 1
+                }}>
                     Expense Tracker
                 </h1>
-                <button
-                    aria-label="Toggle dark mode"
-                    onClick={() => setDarkMode(dm => !dm)}
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#fff',
-                        fontSize: '1.7rem',
-                        marginLeft: 8,
-                        cursor: 'pointer',
-                        padding: '0 4px',
-                        transition: 'color 0.2s',
-                    }}
-                    title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                >
-                    {darkMode ? '🌙' : '☀️'}
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                        onClick={() => {
+                            if (isMobile) {
+                                setForceMobile(false);
+                                setForceDesktop(true);
+                            } else {
+                                setForceMobile(true);
+                                setForceDesktop(false);
+                            }
+                        }}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '1.2rem',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            color: darkMode ? '#f9fafb' : '#111827',
+                        }}
+                    >
+                        {isMobile ? '🖥️' : '📱'}
+                    </button>
+                    <button
+                        onClick={() => setDarkMode(!darkMode)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '1.2rem',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            color: darkMode ? '#f9fafb' : '#111827',
+                        }}
+                    >
+                        {darkMode ? '🌙' : '☀️'}
+                    </button>
+                </div>
             </header>
 
-            {/* Slide-out Mobile Nav */}
-            <div style={{
-                position: 'fixed',
-                top: 0,
-                left: showNav ? 0 : '-70vw',
-                width: '70vw',
-                height: '100vh',
-                background: '#232946',
-                color: '#fff',
-                zIndex: 100,
-                transition: 'left 0.25s',
-                boxShadow: showNav ? '2px 0 16px 0 rgba(44,62,80,0.16)' : 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                padding: '2.5rem 0 1.5rem 0',
-            }}>
-                <div style={{ fontWeight: 700, fontSize: '1.1rem', letterSpacing: 1, textAlign: 'center', marginBottom: '2.5rem', color: '#f4f6fa' }}>
-                    <span role="img" aria-label="bank" style={{ marginRight: 8 }}>🏦</span> Dashboard
-                </div>
-                <button
-                    className={activeNav === "profitloss" ? "nav-btn active" : "nav-btn"}
-                    style={{
-                        background: activeNav === "profitloss" ? '#eebbc3' : 'transparent',
-                        color: activeNav === "profitloss" ? '#232946' : '#fff',
-                        border: 'none',
-                        borderRadius: '0 24px 24px 0',
-                        padding: '1.1rem 2rem 1.1rem 2.2rem',
-                        fontSize: '1.08rem',
-                        fontWeight: 600,
-                        marginBottom: 8,
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s, color 0.2s',
-                        boxShadow: activeNav === "profitloss" ? '2px 2px 12px 0 rgba(238,187,195,0.10)' : 'none'
-                    }}
-                    onClick={() => { setActiveNav("profitloss"); setShowNav(false); }}
-                >
-                    Profit & Loss
-                </button>
-                <button
-                    className={activeNav === "expensediscrepancy" ? "nav-btn active" : "nav-btn"}
-                    style={{
-                        background: activeNav === "expensediscrepancy" ? '#eebbc3' : 'transparent',
-                        color: activeNav === "expensediscrepancy" ? '#232946' : '#fff',
-                        border: 'none',
-                        borderRadius: '0 24px 24px 0',
-                        padding: '1.1rem 2rem 1.1rem 2.2rem',
-                        fontSize: '1.08rem',
-                        fontWeight: 600,
-                        marginBottom: 8,
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s, color 0.2s',
-                        boxShadow: activeNav === "expensediscrepancy" ? '2px 2px 12px 0 rgba(238,187,195,0.10)' : 'none'
-                    }}
-                    onClick={() => { setActiveNav("expensediscrepancy"); setShowNav(false); }}
-                >
-                    Expense Discrepencies
-                </button>
-            </div>
-            {/* Overlay for nav */}
-            {showNav && <div onClick={() => setShowNav(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(30,30,40,0.25)', zIndex: 99 }} />}
+            <div style={{ display: 'flex', minHeight: 'calc(100vh - 73px)' }}>
+                {/* Nav Sidebar */}
+                <nav style={{
+                    width: isMobile ? (showNav ? '240px' : '0') : '240px',
+                    background: darkMode ? '#111827' : '#ffffff',
+                    borderRight: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+                    transition: 'all 0.3s',
+                    position: isMobile ? 'fixed' : 'sticky',
+                    top: '73px',
+                    height: 'calc(100vh - 73px)',
+                    overflowY: 'auto',
+                    transform: isMobile && !showNav ? 'translateX(-100%)' : 'translateX(0)',
+                    zIndex: 30
+                }}>
+                    <div style={{ padding: '1.5rem 1rem' }}>
+                        {renderNavButton("Profit & Loss", "profitloss", "💰")}
+                        {renderNavButton("Expense Discrepancies", "expensediscrepancy", "📊")}
+                    </div>
+                </nav>
 
-            {/* Main Content Area */}
-            <main style={{ flex: 1, width: '100%', maxWidth: 600, margin: '0 auto', padding: '0 0.25rem', background: '#f4f6fa' }}>
-                {/* File Uploader (mobile-friendly) */}
-                <div style={{ margin: '0.8rem 0 1rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} style={{ padding: "0.5rem 0.8rem", borderRadius: "6px", border: "1.5px solid #cbd5e0", fontSize: '0.95rem', background: '#fff', boxShadow: '0 1px 4px 0 rgba(44,62,80,0.03)', width: '100%' }} />
-                </div>
-                {/* Dashboard View after file upload */}
-                {fileUploaded && (
-                    <>
-                        {/* Main Content Switcher */}
-                        {activeNav === "profitloss" && (
-                            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.8rem', alignItems: 'center' }}>
-                                {bankStats && (
-                                    <div className="card" style={{
-                                        width: '100%',
-                                        maxWidth: 400,
-                                        borderRadius: 14,
-                                        boxShadow: '0 4px 18px 0 rgba(44,62,80,0.10)',
-                                        padding: '0.7rem 1.1rem',
-                                        background: darkMode
-                                            ? 'linear-gradient(135deg, #232946 60%, #181c25 100%)'
-                                            : 'linear-gradient(135deg, #f8fafc 60%, #e0e7ff 100%)',
-                                        color: darkMode ? '#f4f6fa' : '#232946',
-                                        border: darkMode ? '1.5px solid #232946' : '1.5px solid #e0e7ef',
-                                        boxShadow: darkMode ? '0 4px 18px 0 rgba(30,41,59,0.25)' : '0 4px 18px 0 rgba(44,62,80,0.10)',
-                                        margin: '0 auto',
-                                        animation: 'fadeIn 0.4s',
-                                        minHeight: 'unset',
-                                        height: 'auto',
-                                        display: 'block',
-                                        lineHeight: 1.1,
-                                        overflow: 'hidden',
-                                        cursor: 'pointer',
-                                    }}
-                                        onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.025)'; e.currentTarget.style.boxShadow = '0 8px 28px 0 rgba(44,62,80,0.16)'; }}
-                                        onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 18px 0 rgba(44,62,80,0.10)'; }}
-                                    >
-                                        <h2 style={{ fontSize: '1.08rem', margin: '0 0 4px 0', fontWeight: 800, lineHeight: 1.1, color: '#3b3b5c', letterSpacing: 0.2 }}>Bank Book</h2>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Total Deposits: <span style={{ fontWeight: 700, color: '#2563eb' }}>₹{bankStats.totalDeposits.toFixed(2)}</span></p>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Total Withdrawals: <span style={{ fontWeight: 700, color: '#e11d48' }}>₹{bankStats.totalWithdrawals.toFixed(2)}</span></p>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Profit / Loss: <span style={{ color: bankStats.profitLoss >= 0 ? '#059669' : '#e11d48', fontWeight: 800 }}>{bankStats.profitLoss >= 0 ? '+' : ''}₹{bankStats.profitLoss.toFixed(2)}</span></p>
-                                    </div>
-                                )}
-                                {cashStats && (
-                                    <div className="card" style={{
-                                        width: '100%',
-                                        maxWidth: 400,
-                                        borderRadius: 14,
-                                        boxShadow: '0 4px 18px 0 rgba(44,62,80,0.10)',
-                                        padding: '0.7rem 1.1rem',
-                                        background: darkMode
-                                            ? 'linear-gradient(135deg, #232946 60%, #181c25 100%)'
-                                            : 'linear-gradient(135deg, #f8fafc 60%, #fce7f3 100%)',
-                                        color: darkMode ? '#f4f6fa' : '#232946',
-                                        border: darkMode ? '1.5px solid #232946' : '1.5px solid #e0e7ef',
-                                        boxShadow: darkMode ? '0 4px 18px 0 rgba(30,41,59,0.25)' : '0 4px 18px 0 rgba(44,62,80,0.10)',
-                                        margin: '0 auto',
-                                        animation: 'fadeIn 0.4s',
-                                        minHeight: 'unset',
-                                        height: 'auto',
-                                        display: 'block',
-                                        lineHeight: 1.1,
-                                        overflow: 'hidden',
-                                        cursor: 'pointer',
-                                    }}
-                                        onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.025)'; e.currentTarget.style.boxShadow = '0 8px 28px 0 rgba(44,62,80,0.16)'; }}
-                                        onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 18px 0 rgba(44,62,80,0.10)'; }}
-                                    >
-                                        <h2 style={{ fontSize: '1.08rem', margin: '0 0 4px 0', fontWeight: 800, lineHeight: 1.1, color: '#3b3b5c', letterSpacing: 0.2 }}>Cash Book</h2>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Total Cash Orders: <span style={{ fontWeight: 700, color: '#2563eb' }}>₹{cashStats.cashOrdersTotal.toFixed(2)}</span></p>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Total Cash Spent: <span style={{ fontWeight: 700, color: '#e11d48' }}>₹{cashStats.cashSpent.toFixed(2)}</span></p>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Difference: <span style={{ color: cashStats.cashDifference >= 0 ? '#059669' : '#e11d48', fontWeight: 800 }}>{cashStats.cashDifference >= 0 ? '+' : ''}₹{cashStats.cashDifference.toFixed(2)}</span></p>
-                                    </div>
-                                )}
-                                {petpoojaStats && (
-                                    <div className="card" style={{
-                                        width: '100%',
-                                        maxWidth: 400,
-                                        borderRadius: 14,
-                                        boxShadow: '0 4px 18px 0 rgba(44,62,80,0.10)',
-                                        padding: '0.7rem 1.1rem',
-                                        background: darkMode
-                                            ? 'linear-gradient(135deg, #232946 60%, #181c25 100%)'
-                                            : 'linear-gradient(135deg, #f8fafc 60%, #d1fae5 100%)',
-                                        color: darkMode ? '#f4f6fa' : '#232946',
-                                        border: darkMode ? '1.5px solid #232946' : '1.5px solid #e0e7ef',
-                                        boxShadow: darkMode ? '0 4px 18px 0 rgba(30,41,59,0.25)' : '0 4px 18px 0 rgba(44,62,80,0.10)',
-                                        margin: '0 auto',
-                                        animation: 'fadeIn 0.4s',
-                                        minHeight: 'unset',
-                                        height: 'auto',
-                                        display: 'block',
-                                        lineHeight: 1.1,
-                                        overflow: 'hidden',
-                                        cursor: 'pointer',
-                                    }}
-                                        onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.025)'; e.currentTarget.style.boxShadow = '0 8px 28px 0 rgba(44,62,80,0.16)'; }}
-                                        onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 18px 0 rgba(44,62,80,0.10)'; }}
-                                    >
-                                        <h2 style={{ fontSize: '1.08rem', margin: '0 0 4px 0', fontWeight: 800, lineHeight: 1.1, color: '#3b3b5c', letterSpacing: 0.2 }}>Petpooja Payments</h2>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Petpooja Order Total: <span style={{ fontWeight: 700, color: '#2563eb' }}>₹{petpoojaStats.petpoojaOrdersTotal.toFixed(2)}</span></p>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Total Paid from Bank: <span style={{ fontWeight: 700, color: '#e11d48' }}>₹{petpoojaStats.bankSpent.toFixed(2)}</span></p>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Difference: <span style={{ color: petpoojaStats.petpoojaDifference >= 0 ? '#059669' : '#e11d48', fontWeight: 800 }}>{petpoojaStats.petpoojaDifference >= 0 ? '+' : ''}₹{petpoojaStats.petpoojaDifference.toFixed(2)}</span></p>
-                                    </div>
-                                )}
-                                {incomeCashStats && (
-                                    <div className="card" style={{
-                                        width: '100%',
-                                        maxWidth: 400,
-                                        borderRadius: 14,
-                                        boxShadow: '0 4px 18px 0 rgba(44,62,80,0.10)',
-                                        padding: '0.7rem 1.1rem',
-                                        background: darkMode
-                                            ? 'linear-gradient(135deg, #232946 60%, #181c25 100%)'
-                                            : 'linear-gradient(135deg, #f8fafc 60%, #fef9c3 100%)',
-                                        color: darkMode ? '#f4f6fa' : '#232946',
-                                        border: darkMode ? '1.5px solid #232946' : '1.5px solid #e0e7ef',
-                                        boxShadow: darkMode ? '0 4px 18px 0 rgba(30,41,59,0.25)' : '0 4px 18px 0 rgba(44,62,80,0.10)',
-                                        margin: '0 auto',
-                                        animation: 'fadeIn 0.4s',
-                                        minHeight: 'unset',
-                                        height: 'auto',
-                                        display: 'block',
-                                        lineHeight: 1.1,
-                                        overflow: 'hidden',
-                                        cursor: 'pointer',
-                                    }}
-                                        onMouseOver={e => { e.currentTarget.style.transform = 'scale(1.025)'; e.currentTarget.style.boxShadow = '0 8px 28px 0 rgba(44,62,80,0.16)'; }}
-                                        onMouseOut={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 18px 0 rgba(44,62,80,0.10)'; }}
-                                    >
-                                        <h2 style={{ fontSize: '1.08rem', margin: '0 0 4px 0', fontWeight: 800, lineHeight: 1.1, color: '#3b3b5c', letterSpacing: 0.2 }}>Income in Cash</h2>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Total Cash Income: <span style={{ fontWeight: 700, color: '#2563eb' }}>₹{incomeCashStats.incomeCashTotal.toFixed(2)}</span></p>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Total Cash Spent: <span style={{ fontWeight: 700, color: '#e11d48' }}>₹{incomeCashStats.totalCashSpent.toFixed(2)}</span></p>
-                                        <p style={{ margin: 0, fontSize: '1.01rem', lineHeight: 1.13, color: '#4a5568' }}>Difference: <span style={{ color: incomeCashStats.incomeCashDifference >= 0 ? '#059669' : '#e11d48', fontWeight: 800 }}>{incomeCashStats.incomeCashDifference >= 0 ? '+' : ''}₹{incomeCashStats.incomeCashDifference.toFixed(2)}</span></p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        {activeNav === "expensediscrepancy" && expenseDiscrepancy && (
-                            <div style={{ width: '100%', margin: '0 auto', marginBottom: '1.5rem', padding: '0.25rem 0.2rem' }}>
-                                <div className="card" style={{
-                                    width: '100%',
-                                    borderRadius: 8,
-                                    boxShadow: darkMode ? '0 1px 8px 0 rgba(30,41,59,0.18)' : '0 1px 4px 0 rgba(44,62,80,0.08)',
-                                    padding: '0.8rem 0.4rem',
-                                    background: darkMode ? '#232946' : '#fff',
-                                    margin: '0 auto',
-                                    animation: 'fadeIn 0.4s',
-                                    border: darkMode ? '1.5px solid #181c25' : '1.5px solid #e0e7ef',
-                                    color: darkMode ? '#f4f6fa' : '#232946',
-                                }}>
-                                    <h2 style={{ fontSize: '1rem', marginBottom: 4, fontWeight: 700, color: darkMode ? '#fbbf24' : '#232946' }}>Expence Discrepencies</h2>
-                                    <p style={{ margin: 0, fontSize: '0.91rem', lineHeight: 1.2 }}>Total Withdrawals from Bank: <span style={{ fontWeight: 600 }}>₹{expenseDiscrepancy.totalBankWithdrawals.toFixed(2)}</span></p>
-                                    <p style={{ margin: 0, fontSize: '0.91rem', lineHeight: 1.2 }}>Total Spent from Bank in Petpooja: <span style={{ fontWeight: 600 }}>₹{expenseDiscrepancy.totalPetpoojaBankSpent.toFixed(2)}</span></p>
-                                    <p style={{ margin: 0, fontSize: '0.91rem', lineHeight: 1.2 }}>Discrepancy: <span style={{ color: expenseDiscrepancy.discrepancy === 0 ? (darkMode ? '#f4f6fa' : '#4a5568') : (expenseDiscrepancy.discrepancy > 0 ? 'orange' : '#e11d48'), fontWeight: 600 }}>₹{expenseDiscrepancy.discrepancy.toFixed(2)}</span></p>
-                                    {/* Export to Excel Button */}
-                                    {discrepancyRows.length > 0 && (
-                                        <button
-                                            onClick={() => {
-                                                const ws = XLSX.utils.json_to_sheet(discrepancyRows);
-                                                const wb = XLSX.utils.book_new();
-                                                XLSX.utils.book_append_sheet(wb, ws, 'Discrepancies');
-                                                XLSX.writeFile(wb, `discrepancies_${new Date().toISOString().slice(0, 10)}.xlsx`);
-                                            }}
-                                            style={{
-                                                margin: '14px 0 10px 0',
-                                                padding: '0.5rem 1.1rem',
-                                                background: darkMode ? 'linear-gradient(90deg, #6366f1 40%, #232946 100%)' : 'linear-gradient(90deg, #6366f1 40%, #06b6d4 100%)',
-                                                color: '#fff',
-                                                border: 'none',
-                                                borderRadius: 8,
-                                                fontWeight: 700,
-                                                fontSize: '1rem',
-                                                boxShadow: darkMode ? '0 2px 8px 0 rgba(30,41,59,0.18)' : '0 2px 8px 0 rgba(44,62,80,0.10)',
-                                                cursor: 'pointer',
-                                                transition: 'background 0.18s',
-                                                letterSpacing: 0.2,
-                                                outline: 'none',
-                                                display: 'block',
-                                                marginLeft: 'auto',
-                                            }}
-                                        >
-                                            Export to Excel
-                                        </button>
-                                    )}
-                                    {/* Date-wise discrepancy table */}
-                                    {discrepancyRows.length > 0 && (
-                                        <div style={{ overflowX: 'auto', marginTop: 12, margin: '12px -0.4rem 0' }}>
-                                            <table style={{
-                                                width: '100%',
-                                                fontSize: '0.88rem',
-                                                borderCollapse: 'collapse',
-                                                background: darkMode ? '#232946' : '#fff',
-                                                tableLayout: 'fixed',
-                                                color: darkMode ? '#f4f6fa' : '#232946',
-                                                border: darkMode ? '1.2px solid #232946' : '1.2px solid #e2e8f0',
-                                            }}>
-                                                <colgroup>
-                                                    <col style={{ width: '20%' }} />
-                                                    <col style={{ width: '17%' }} />
-                                                    <col style={{ width: '17%' }} />
-                                                    <col style={{ width: '17%' }} />
-                                                    <col style={{ width: '29%' }} />
-                                                </colgroup>
-                                                <thead>
-                                                    <tr>
-                                                        <th style={{
-                                                            padding: '0.35rem 0.2rem',
-                                                            background: darkMode ? '#181c25' : '#f7fafc',
-                                                            color: darkMode ? '#fbbf24' : '#2d3748',
-                                                            fontWeight: 600,
-                                                            textAlign: 'left',
-                                                            borderBottom: darkMode ? '1px solid #232946' : '1px solid #e2e8f0',
-                                                            fontSize: '0.88rem',
-                                                        }}>Date</th>
-                                                        <th style={{
-                                                            padding: '0.35rem 0.2rem',
-                                                            background: darkMode ? '#181c25' : '#f7fafc',
-                                                            color: darkMode ? '#fbbf24' : '#2d3748',
-                                                            fontWeight: 600,
-                                                            textAlign: 'right',
-                                                            borderBottom: darkMode ? '1px solid #232946' : '1px solid #e2e8f0',
-                                                            fontSize: '0.88rem',
-                                                        }}>Bank</th>
-                                                        <th style={{
-                                                            padding: '0.35rem 0.2rem',
-                                                            background: darkMode ? '#181c25' : '#f7fafc',
-                                                            color: darkMode ? '#fbbf24' : '#2d3748',
-                                                            fontWeight: 600,
-                                                            textAlign: 'right',
-                                                            borderBottom: darkMode ? '1px solid #232946' : '1px solid #e2e8f0',
-                                                            fontSize: '0.88rem',
-                                                        }}>Petpooja</th>
-                                                        <th style={{
-                                                            padding: '0.35rem 0.2rem',
-                                                            background: darkMode ? '#181c25' : '#f7fafc',
-                                                            color: darkMode ? '#fbbf24' : '#2d3748',
-                                                            fontWeight: 600,
-                                                            textAlign: 'center',
-                                                            borderBottom: darkMode ? '1px solid #232946' : '1px solid #e2e8f0',
-                                                            fontSize: '0.88rem',
-                                                        }}>Status</th>
-                                                        <th style={{
-                                                            padding: '0.35rem 0.2rem',
-                                                            background: darkMode ? '#181c25' : '#f7fafc',
-                                                            color: darkMode ? '#fbbf24' : '#2d3748',
-                                                            fontWeight: 600,
-                                                            textAlign: 'left',
-                                                            borderBottom: darkMode ? '1px solid #232946' : '1px solid #e2e8f0',
-                                                            fontSize: '0.88rem',
-                                                        }}>Explanation</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {discrepancyRows.map((row, idx) => (
-                                                        <tr key={idx} style={{
-                                                            background: darkMode
-                                                                ? (idx % 2 === 0 ? '#232946' : '#181c25')
-                                                                : (idx % 2 === 0 ? '#f9fafb' : '#fff'),
-                                                        }}>
-                                                            <td style={{
-                                                                padding: '0.35rem 0.2rem',
-                                                                color: darkMode ? '#f4f6fa' : '#2d3748',
-                                                                fontSize: '0.88rem',
-                                                                borderBottom: darkMode ? '1px solid #232946' : '1px solid #e2e8f0',
-                                                                wordBreak: 'break-word',
-                                                            }}>{row.date}</td>
-                                                            <td style={{
-                                                                padding: '0.35rem 0.2rem',
-                                                                color: row.bankAmount !== '' ? (darkMode ? '#60a5fa' : '#2b6cb0') : (darkMode ? '#64748b' : '#a0aec0'),
-                                                                fontWeight: 500,
-                                                                textAlign: 'right',
-                                                                fontSize: '0.88rem',
-                                                                borderBottom: darkMode ? '1px solid #232946' : '1px solid #e2e8f0',
-                                                                wordBreak: 'break-word',
-                                                            }}>{row.bankAmount !== '' ? `₹${row.bankAmount}` : '-'}</td>
-                                                            <td style={{
-                                                                padding: '0.35rem 0.2rem',
-                                                                color: row.petpoojaAmount !== '' ? (darkMode ? '#34d399' : '#38a169') : (darkMode ? '#64748b' : '#a0aec0'),
-                                                                fontWeight: 500,
-                                                                textAlign: 'right',
-                                                                fontSize: '0.88rem',
-                                                                borderBottom: darkMode ? '1px solid #232946' : '1px solid #e2e8f0',
-                                                                wordBreak: 'break-word',
-                                                            }}>{row.petpoojaAmount !== '' ? `₹${row.petpoojaAmount}` : '-'}</td>
-                                                            <td style={{
-                                                                padding: '0.35rem 0.2rem',
-                                                                color:
-                                                                    row.status === 'Not found in Petpooja'
-                                                                        ? (darkMode ? '#60a5fa' : '#2b6cb0')
-                                                                        : row.status === 'Not found in Bank'
-                                                                            ? (darkMode ? '#34d399' : '#38a169')
-                                                                            : (darkMode ? '#f4f6fa' : '#4a5568'),
-                                                                fontWeight: 600,
-                                                                textAlign: 'center',
-                                                                fontSize: '0.88rem',
-                                                                borderBottom: darkMode ? '1px solid #232946' : '1px solid #e2e8f0',
-                                                                wordBreak: 'break-word',
-                                                            }}>{row.status}</td>
-                                                            <td style={{
-                                                                padding: '0.35rem 0.2rem',
-                                                                color: darkMode ? '#f4f6fa' : '#4a5568',
-                                                                fontSize: '0.88rem',
-                                                                borderBottom: darkMode ? '1px solid #232946' : '1px solid #e2e8f0',
-                                                                textAlign: 'left',
-                                                                wordBreak: 'break-word',
-                                                            }}>{row.explanation}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
+                {/* Main Content */}
+                <main style={{
+                    flex: 1,
+                    padding: '1.5rem',
+                    marginLeft: isMobile ? 0 : '240px',
+                    transition: 'margin-left 0.3s',
+                    background: darkMode ? '#1f2937' : '#f9fafb',
+                    minHeight: '100%'
+                }}>
+                    {!fileUploaded ? (
+                        <div style={{
+                            maxWidth: '500px',
+                            margin: '2rem auto',
+                            padding: '0 1rem'
+                        }}>
+                            <FileUploader onChange={handleFileUpload} />
+                        </div>
+                    ) : (
+                        <>
+                            {activeNav === "profitloss" && (
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(300px, 1fr))',
+                                    gap: '1rem',
+                                    maxWidth: '1200px',
+                                    margin: '0 auto'
+                                }}>                                    {bankStats && renderCard("Bank Book", [
+                                    { label: "Total Deposits", value: bankStats.totalDeposits, type: "income" },
+                                    { label: "Total Withdrawals", value: bankStats.totalWithdrawals, type: "expense" },
+                                    { label: "Profit / Loss", value: bankStats.profitLoss, type: "difference" }
+                                ], "default", isMobile)}
+
+                                    {cashStats && renderCard("Cash Book", [
+                                        { label: "Total Cash Orders", value: cashStats.cashOrdersTotal, type: "income" },
+                                        { label: "Total Cash Spent", value: cashStats.cashSpent, type: "expense" },
+                                        { label: "Difference", value: cashStats.cashDifference, type: "difference" }
+                                    ], "default", isMobile)}
+
+                                    {petpoojaStats && renderCard("Petpooja Payments", [
+                                        { label: "Petpooja Order Total", value: petpoojaStats.petpoojaOrdersTotal, type: "income" },
+                                        { label: "Total Paid from Bank", value: petpoojaStats.bankSpent, type: "expense" },
+                                        { label: "Difference", value: petpoojaStats.petpoojaDifference, type: "difference" }
+                                    ], "default", isMobile)}
+
+                                    {incomeCashStats && renderCard("Income in Cash", [
+                                        { label: "Total Cash Income", value: incomeCashStats.incomeCashTotal, type: "income" },
+                                        { label: "Total Cash Spent", value: incomeCashStats.totalCashSpent, type: "expense" },
+                                        { label: "Difference", value: incomeCashStats.incomeCashDifference, type: "difference" }
+                                    ])}
                                 </div>
-                            </div>
-                        )}
-                    </>
+                            )}                            {activeNav === "expensediscrepancy" && expenseDiscrepancy && (
+                                <div style={{
+                                    maxWidth: '1200px',
+                                    margin: '0 auto',
+                                    animation: 'fadeSlideUp 0.5s ease forwards'
+                                }}>                                    <Card darkMode={darkMode} variant="elevated" isMobile={isMobile}>
+                                        <h2 style={{
+                                            fontSize: '1.5rem',
+                                            marginBottom: '1.5rem',
+                                            fontWeight: 700,
+                                            color: darkMode ? '#f9fafb' : '#111827',
+                                            fontFamily: "'Plus Jakarta Sans', sans-serif",
+                                            borderBottom: darkMode ? '1px solid #4b5563' : '1px solid #e5e7eb',
+                                            paddingBottom: '1rem'
+                                        }}>
+                                            Expense Discrepancies
+                                        </h2>
+
+                                        <div style={{
+                                            display: 'flex',
+                                            flexDirection: isMobile ? 'column' : 'row',
+                                            gap: '1rem',
+                                            justifyContent: 'space-between',
+                                            marginBottom: '2rem',
+                                            padding: '1rem',
+                                            background: darkMode ? '#1f2937' : '#f8fafc',
+                                            borderRadius: '0.5rem',
+                                            border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+                                        }}>
+                                            <div style={{
+                                                flex: 1,
+                                                padding: '0.5rem 1rem',
+                                                borderRadius: '0.375rem',
+                                                background: darkMode ? '#374151' : '#ffffff',
+                                                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                                            }}>
+                                                <p style={{
+                                                    margin: '0 0 0.25rem 0',
+                                                    fontSize: '0.875rem',
+                                                    color: darkMode ? '#9ca3af' : '#6b7280',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.025em'
+                                                }}>
+                                                    Total Bank Withdrawals
+                                                </p>
+                                                <p style={{
+                                                    margin: 0,
+                                                    fontSize: '1.25rem',
+                                                    fontWeight: 600,
+                                                    color: '#2563eb'
+                                                }}>
+                                                    ₹{expenseDiscrepancy.totalBankWithdrawals.toFixed(2)}
+                                                </p>
+                                            </div>
+
+                                            <div style={{
+                                                flex: 1,
+                                                padding: '0.5rem 1rem',
+                                                borderRadius: '0.375rem',
+                                                background: darkMode ? '#374151' : '#ffffff',
+                                                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                                            }}>
+                                                <p style={{
+                                                    margin: '0 0 0.25rem 0',
+                                                    fontSize: '0.875rem',
+                                                    color: darkMode ? '#9ca3af' : '#6b7280',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.025em'
+                                                }}>
+                                                    Total Petpooja Bank Expenses
+                                                </p>
+                                                <p style={{
+                                                    margin: 0,
+                                                    fontSize: '1.25rem',
+                                                    fontWeight: 600,
+                                                    color: '#e11d48'
+                                                }}>
+                                                    ₹{expenseDiscrepancy.totalPetpoojaBankSpent.toFixed(2)}
+                                                </p>
+                                            </div>
+
+                                            <div style={{
+                                                flex: 1,
+                                                padding: '0.5rem 1rem',
+                                                borderRadius: '0.375rem',
+                                                background: darkMode ? '#374151' : '#ffffff',
+                                                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                                                borderLeft: isMobile ? 'none' : (darkMode ? '2px solid #4b5563' : '2px solid #e5e7eb')
+                                            }}>
+                                                <p style={{
+                                                    margin: '0 0 0.25rem 0',
+                                                    fontSize: '0.875rem',
+                                                    color: darkMode ? '#9ca3af' : '#6b7280',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.025em'
+                                                }}>
+                                                    Total Discrepancy
+                                                </p>
+                                                <p style={{
+                                                    margin: 0,
+                                                    fontSize: '1.25rem',
+                                                    fontWeight: 600,
+                                                    color: expenseDiscrepancy.discrepancy === 0
+                                                        ? (darkMode ? '#9ca3af' : '#6b7280')
+                                                        : (expenseDiscrepancy.discrepancy > 0 ? '#f59e0b' : '#e11d48')
+                                                }}>
+                                                    ₹{expenseDiscrepancy.discrepancy.toFixed(2)}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {discrepancyRows.length > 0 && (
+                                            <>
+                                                {discrepancyRows.length > 0 ? (<div style={{
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: '1.5rem'
+                                                }}>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        flexDirection: isMobile ? 'column' : 'row',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: isMobile ? 'stretch' : 'center',
+                                                        gap: isMobile ? '1rem' : '0'
+                                                    }}>
+                                                        <h3 style={{
+                                                            margin: 0,
+                                                            color: darkMode ? '#f3f4f6' : '#1f2937',
+                                                            fontSize: '1.125rem',
+                                                            fontWeight: 600
+                                                        }}>
+                                                            Discrepancy Details
+                                                        </h3>
+                                                        <Button
+                                                            onClick={() => {
+                                                                const ws = XLSX.utils.json_to_sheet(discrepancyRows);
+                                                                const wb = XLSX.utils.book_new();
+                                                                XLSX.utils.book_append_sheet(wb, ws, 'Discrepancies');
+                                                                XLSX.writeFile(wb, `discrepancies_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                                                            }}
+                                                            style={{
+                                                                marginLeft: 'auto'
+                                                            }}
+                                                        >
+                                                            Export to Excel
+                                                        </Button>
+                                                    </div>
+
+                                                    <div style={tableContainerStyle}>
+                                                        <table style={tableStyle}>
+                                                            <colgroup>
+                                                                <col style={{ width: '15%' }} />
+                                                                <col style={{ width: '15%' }} />
+                                                                <col style={{ width: '15%' }} />
+                                                                <col style={{ width: '20%' }} />
+                                                                <col style={{ width: '35%' }} />
+                                                            </colgroup>
+                                                            <thead>
+                                                                <tr>
+                                                                    <th style={{
+                                                                        ...headerCellStyle,
+                                                                        textAlign: 'left'
+                                                                    }}>Date</th>
+                                                                    <th style={{
+                                                                        ...headerCellStyle,
+                                                                        textAlign: 'right'
+                                                                    }}>Bank Amount</th>
+                                                                    <th style={{
+                                                                        ...headerCellStyle,
+                                                                        textAlign: 'right'
+                                                                    }}>Petpooja Amount</th>
+                                                                    <th style={{
+                                                                        ...headerCellStyle,
+                                                                        textAlign: 'center'
+                                                                    }}>Status</th>
+                                                                    <th style={{
+                                                                        ...headerCellStyle,
+                                                                        textAlign: 'left'
+                                                                    }}>Explanation</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {discrepancyRows.map((row, idx) => (
+                                                                    <tr key={idx} style={{
+                                                                        background: darkMode
+                                                                            ? (idx % 2 === 0 ? 'rgba(55, 65, 81, 0.5)' : 'rgba(31, 41, 55, 0.5)')
+                                                                            : (idx % 2 === 0 ? '#ffffff' : '#f9fafb'),
+                                                                        transition: 'background-color 0.2s',
+                                                                    }}>
+                                                                        <td style={{
+                                                                            ...cellStyle,
+                                                                            color: darkMode ? '#f3f4f6' : '#1f2937',
+                                                                            fontWeight: 500
+                                                                        }}>
+                                                                            {row.date}
+                                                                        </td>
+                                                                        <td style={{
+                                                                            ...cellStyle,
+                                                                            textAlign: 'right',
+                                                                            color: row.bankAmount
+                                                                                ? (darkMode ? '#60a5fa' : '#2563eb')
+                                                                                : (darkMode ? '#6b7280' : '#9ca3af'),
+                                                                            fontWeight: row.bankAmount ? 600 : 400
+                                                                        }}>
+                                                                            {row.bankAmount
+                                                                                ? new Intl.NumberFormat('en-IN', {
+                                                                                    style: 'currency',
+                                                                                    currency: 'INR'
+                                                                                }).format(row.bankAmount)
+                                                                                : '-'
+                                                                            }
+                                                                        </td>
+                                                                        <td style={{
+                                                                            ...cellStyle,
+                                                                            textAlign: 'right',
+                                                                            color: row.petpoojaAmount
+                                                                                ? (darkMode ? '#34d399' : '#059669')
+                                                                                : (darkMode ? '#6b7280' : '#9ca3af'),
+                                                                            fontWeight: row.petpoojaAmount ? 600 : 400
+                                                                        }}>
+                                                                            {row.petpoojaAmount
+                                                                                ? new Intl.NumberFormat('en-IN', {
+                                                                                    style: 'currency',
+                                                                                    currency: 'INR'
+                                                                                }).format(row.petpoojaAmount)
+                                                                                : '-'
+                                                                            }
+                                                                        </td>
+                                                                        <td style={{
+                                                                            ...cellStyle,
+                                                                            textAlign: 'center'
+                                                                        }}>
+                                                                            <span style={{
+                                                                                display: 'inline-block',
+                                                                                padding: '0.25rem 0.75rem',
+                                                                                borderRadius: '9999px',
+                                                                                fontSize: '0.75rem',
+                                                                                fontWeight: 500,
+                                                                                background: row.status === 'Not found in Petpooja'
+                                                                                    ? (darkMode ? 'rgba(37, 99, 235, 0.2)' : 'rgba(37, 99, 235, 0.1)')
+                                                                                    : (darkMode ? 'rgba(5, 150, 105, 0.2)' : 'rgba(5, 150, 105, 0.1)'),
+                                                                                color: row.status === 'Not found in Petpooja'
+                                                                                    ? (darkMode ? '#60a5fa' : '#2563eb')
+                                                                                    : (darkMode ? '#34d399' : '#059669'),
+                                                                            }}>
+                                                                                {row.status}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td style={{
+                                                                            ...cellStyle,
+                                                                            color: darkMode ? '#d1d5db' : '#4b5563',
+                                                                            whiteSpace: 'normal',
+                                                                            maxWidth: '400px',
+                                                                            lineHeight: '1.5'
+                                                                        }}>
+                                                                            {row.explanation}
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                                ) : (<div style={{
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    padding: '3rem 2rem',
+                                                    gap: '1rem',
+                                                    color: darkMode ? '#9ca3af' : '#6b7280',
+                                                    background: darkMode ? 'rgba(31, 41, 55, 0.5)' : 'rgba(249, 250, 251, 0.8)',
+                                                    borderRadius: '0.5rem',
+                                                    border: darkMode ? '1px solid #374151' : '1px solid #e5e7eb'
+                                                }}>
+                                                    <span role="img" aria-label="check" style={{ fontSize: '2rem' }}>
+                                                        ✅
+                                                    </span>
+                                                    <p style={{
+                                                        fontSize: '1.125rem',
+                                                        fontWeight: 500,
+                                                        margin: 0
+                                                    }}>
+                                                        No discrepancies found
+                                                    </p>
+                                                    <p style={{
+                                                        fontSize: '0.875rem',
+                                                        maxWidth: '400px',
+                                                        textAlign: 'center',
+                                                        margin: 0
+                                                    }}>
+                                                        All bank withdrawals match with Petpooja expenses for the selected period.
+                                                    </p>
+                                                </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </Card>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </main>
+
+                {/* Mobile Nav Overlay */}
+                {isMobile && showNav && (
+                    <div
+                        onClick={() => setShowNav(false)}
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            width: '100vw',
+                            height: '100vh',
+                            background: 'rgba(0,0,0,0.5)',
+                            zIndex: 20
+                        }}
+                    />
                 )}
-            </main>
+            </div>
+
             {/* Footer */}
-            <footer style={{ backgroundColor: "#1a202c", color: "white", padding: "0.6rem", textAlign: "center", fontSize: '0.9rem', marginTop: "auto" }}>
+            <footer style={{
+                backgroundColor: darkMode ? "#1f2937" : "#ffffff",
+                color: darkMode ? "#f9fafb" : "#111827",
+                padding: "0.8rem",
+                textAlign: "center",
+                fontSize: '0.9rem',
+                marginTop: "auto",
+                borderTop: darkMode ? '1px solid #374151' : '1px solid #e5e7eb'
+            }}>
                 <p style={{ margin: 0 }}>&copy; 2025 Bank Cash Book Viewer</p>
             </footer>
         </div>
